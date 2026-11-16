@@ -50,6 +50,7 @@
 #include "gui/computermodel.h"
 #include "gui/appmodel.h"
 #include "backend/autoupdatechecker.h"
+#include "backend/novaapi.h"
 #include "backend/computermanager.h"
 #include "backend/systemproperties.h"
 #include "streaming/session.h"
@@ -940,6 +941,14 @@ int main(int argc, char *argv[])
                                               [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
                                                   return new ComputerManager(StreamingPreferences::get(qmlEngine));
                                               });
+    // Nova Play: la cuenta de novawebcolombia.com (inicio de sesion, saldo, consolas)
+    qmlRegisterSingletonType<NovaApi>("NovaApi", 1, 0,
+                                      "NovaApi",
+                                      [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
+                                          NovaApi* api = new NovaApi();
+                                          api->setEngine(qmlEngine);
+                                          return api;
+                                      });
     qmlRegisterSingletonType<AutoUpdateChecker>("AutoUpdateChecker", 1, 0,
                                                 "AutoUpdateChecker",
                                                 [](QQmlEngine*, QJSEngine*) -> QObject* {
@@ -1004,7 +1013,8 @@ int main(int argc, char *argv[])
 
     switch (commandLineParserResult) {
     case GlobalCommandLineParser::NormalStartRequested:
-        initialView = "qrc:/gui/PcView.qml";
+        // Nova Play: la pantalla propia (inicio de sesion y consola del jugador); la lista de equipos queda en «Mis consolas»
+        initialView = "qrc:/gui/NovaHome.qml";
         break;
     case GlobalCommandLineParser::StreamRequested:
         {

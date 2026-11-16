@@ -27,9 +27,8 @@ ApplicationWindow {
         // Override the background color to Material 2 colors for Qt 6.5+
         // in order to improve contrast between GFE's placeholder box art
         // and the background of the app grid.
-        if (SystemProperties.usesMaterial3Theme) {
-            Material.background = "#303030"
-        }
+        // Nova Play: fondo noche (las ondas de la marca se dibujan detras, en «background»)
+        Material.background = "#06070F"
 
         SdlGamepadKeyNavigation.enable()
     }
@@ -233,18 +232,57 @@ ApplicationWindow {
         }
     }
 
+    // fondo de la marca: las ondas de Nova Play, oscurecidas
+    background: Rectangle {
+        color: "#06070F"
+        Image {
+            anchors.fill: parent
+            source: "qrc:/res/novaplay-fondo.jpg"
+            fillMode: Image.PreserveAspectCrop
+            opacity: 0.55
+            asynchronous: true
+        }
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#CC06070F" }
+                GradientStop { position: 0.45; color: "#7306070F" }
+                GradientStop { position: 1.0; color: "#E606070F" }
+            }
+        }
+    }
+
     header: ToolBar {
         id: toolBar
-        height: 60
+        height: 64
         anchors.topMargin: 5
         anchors.bottomMargin: 5
+        // barra de Nova Play: vidrio oscuro con una linea fina abajo (sin el azul de Material)
+        background: Rectangle {
+            color: "#D90D1022"
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#14FFFFFF" }
+        }
+
+        Image {
+            // el logo de Nova Play en la pantalla principal
+            visible: stackView.depth <= 1
+            source: "qrc:/res/novaplay-logo.png"
+            fillMode: Image.PreserveAspectFit
+            height: 30
+            anchors.left: parent.left
+            anchors.leftMargin: 22
+            anchors.verticalCenter: parent.verticalCenter
+            smooth: true
+            mipmap: true
+        }
 
         Label {
             id: titleLabel
-            visible: toolBar.width > 700
+            visible: toolBar.width > 700 && stackView.depth > 1
             anchors.fill: parent
             text: stackView.currentItem.objectName
-            font.pointSize: 20
+            font.pointSize: 17
+            font.weight: Font.DemiBold
             elide: Label.ElideRight
             horizontalAlignment: Qt.AlignHCenter
             verticalAlignment: Qt.AlignVCenter
@@ -296,8 +334,8 @@ ApplicationWindow {
 
             NavigableToolButton {
                 id: discordButton
-                visible: SystemProperties.hasBrowser &&
-                         stackView.currentItem instanceof SettingsView
+                // Nova Play: sin el boton de la comunidad de Moonlight
+                visible: false
 
                 iconSource: "qrc:/res/discord.svg"
 
@@ -396,7 +434,7 @@ ApplicationWindow {
                 }
 
                 // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide");
+                onClicked: Qt.openUrlExternally("https://novawebcolombia.com/documentacion-nova-play");
 
                 Keys.onDownPressed: {
                     stackView.currentItem.forceActiveFocus(Qt.TabFocus)

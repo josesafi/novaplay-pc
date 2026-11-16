@@ -9,6 +9,7 @@
 #include <QNetworkProxyFactory>
 #include <QPalette>
 #include <QFont>
+#include <QFontDatabase>
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QTemporaryFile>
@@ -971,7 +972,7 @@ int main(int argc, char *argv[])
 
     // These are defaults that we allow the user to override
     if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_MATERIAL_ACCENT")) {
-        qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", "Purple");
+        qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", "#9B4DFF");
     }
     if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_MATERIAL_VARIANT")) {
         qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", "Dense");
@@ -980,7 +981,21 @@ int main(int argc, char *argv[])
         // Qt 6.9 began to use a different shade of Material.Indigo when we use a dark theme
         // (which is all the time). The new color looks washed out, so manually specify the
         // old primary color unless the user overrides it themselves.
-        qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", "#3F51B5");
+        qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", "#0D1022");
+    }
+
+    // Nova Play: fondo noche y la tipografia de la marca (Sora, incluida en la app)
+    if (!qEnvironmentVariableIsSet("QT_QUICK_CONTROLS_MATERIAL_BACKGROUND")) {
+        qputenv("QT_QUICK_CONTROLS_MATERIAL_BACKGROUND", "#06070F");
+    }
+    {
+        int fontId = QFontDatabase::addApplicationFont(":/res/Sora.ttf");
+        QStringList families = QFontDatabase::applicationFontFamilies(fontId);
+        if (!families.isEmpty()) {
+            QFont brandFont(families.first());
+            brandFont.setPointSize(app.font().pointSize());
+            app.setFont(brandFont);
+        }
     }
 
     QQmlApplicationEngine engine;

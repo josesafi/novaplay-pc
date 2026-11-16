@@ -18,7 +18,7 @@ CenteredGridView {
     topMargin: 20
     bottomMargin: 5
     cellWidth: 310; cellHeight: 330;
-    objectName: qsTr("Computers")
+    objectName: qsTr("Mis consolas")
 
     Component.onCompleted: {
         // Don't show any highlighted item until interacting with them.
@@ -106,33 +106,70 @@ CenteredGridView {
 
     model: computerModel
 
+    // cada consola: una tarjeta de vidrio con la «N» de Nova Play; el estado (bloqueada, sin conexion, buscando) en la esquina
     delegate: NavigableItemDelegate {
-        width: 300; height: 320;
+        width: 260; height: 300;
         grid: pcGrid
+        // sin el resaltado gris de Material: el foco se ve en el aro de la tarjeta
+        background: Item {}
 
         property alias pcContextMenu : pcContextMenuLoader.item
 
-        Image {
+        Rectangle {
             id: pcIcon
             anchors.horizontalCenter: parent.horizontalCenter
-            source: "qrc:/res/desktop_windows-48px.svg"
-            sourceSize {
-                width: 200
-                height: 200
-            }
-        }
+            anchors.top: parent.top
+            anchors.topMargin: 14
+            width: 200
+            height: 200
+            radius: 34
+            color: "#121530"
+            border.width: parent.highlighted || parent.hovered ? 3 : 1
+            border.color: parent.highlighted || parent.hovered ? "#FFFFFF" : "#1FFFFFFF"
+            opacity: model.online || model.statusUnknown ? 1.0 : 0.55
 
-        Image {
-            // TODO: Tooltip
-            id: stateIcon
-            anchors.horizontalCenter: pcIcon.horizontalCenter
-            anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: !model.online ? -18 : -16
-            visible: !model.statusUnknown && (!model.online || !model.paired)
-            source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
-            sourceSize {
-                width: !model.online ? 75 : 70
-                height: !model.online ? 75 : 70
+            Rectangle {
+                // brillo morado-azul de la marca alrededor de la tarjeta elegida
+                anchors.fill: parent
+                anchors.margins: -7
+                radius: parent.radius + 7
+                color: "transparent"
+                border.width: 4
+                border.color: "#669B4DFF"
+                visible: pcIcon.parent.highlighted || pcIcon.parent.hovered
+            }
+
+            Image {
+                anchors.centerIn: parent
+                source: "qrc:/res/novaplay-n.png"
+                width: 150
+                height: 150
+                sourceSize { width: 300; height: 300 }
+                smooth: true
+                mipmap: true
+            }
+
+            Rectangle {
+                // distintivo del estado en la esquina
+                id: stateBadge
+                visible: !model.statusUnknown && (!model.online || !model.paired)
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 12
+                width: 46
+                height: 46
+                radius: 23
+                color: !model.online ? "#E6B45309" : "#E60D1022"
+                border.width: 1
+                border.color: "#33FFFFFF"
+
+                Image {
+                    // TODO: Tooltip
+                    id: stateIcon
+                    anchors.centerIn: parent
+                    source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
+                    sourceSize { width: 26; height: 26 }
+                }
             }
         }
 
@@ -140,9 +177,8 @@ CenteredGridView {
             id: statusUnknownSpinner
             anchors.horizontalCenter: pcIcon.horizontalCenter
             anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: -15
-            width: 75
-            height: 75
+            width: 64
+            height: 64
             visible: model.statusUnknown
             running: visible
         }
@@ -153,11 +189,22 @@ CenteredGridView {
 
             width: parent.width
             anchors.top: pcIcon.bottom
-            anchors.bottom: parent.bottom
-            font.pointSize: 36
+            anchors.topMargin: 14
+            font.pointSize: 15
+            font.weight: Font.DemiBold
             horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
             elide: Text.ElideRight
+        }
+
+        Label {
+            // debajo del nombre, en palabras: que le pasa a la consola
+            anchors.top: pcNameText.bottom
+            anchors.topMargin: 2
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            font.pointSize: 11
+            color: "#8D93B0"
+            text: model.statusUnknown ? qsTr("Buscando…") : !model.online ? qsTr("Sin conexión") : !model.paired ? qsTr("Falta emparejar") : qsTr("Lista para jugar")
         }
 
         Loader {

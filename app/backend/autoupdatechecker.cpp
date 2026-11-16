@@ -29,6 +29,10 @@ AutoUpdateChecker::AutoUpdateChecker(QObject *parent) :
 
 void AutoUpdateChecker::start()
 {
+    // Nova Play: no se buscan versiones de Moonlight (le diria al jugador que descargue Moonlight). Las actualizaciones de Nova Play
+    // llegaran por su propio canal.
+    return;
+
     if (!m_Nam) {
         Q_ASSERT(m_Nam);
         return;

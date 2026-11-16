@@ -31,6 +31,10 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 1
 
+      - name: Version de Nova Play (1.0.<compilacion>, para que cada instalador reemplace al anterior)
+        shell: pwsh
+        run: Set-Content -NoNewline -Path app/version.txt -Value "1.0.${{ github.run_number }}"
+
       - name: Download dependencies (Windows)
         if: runner.os == 'Windows'
         run: powershell ./setup-deps.ps1

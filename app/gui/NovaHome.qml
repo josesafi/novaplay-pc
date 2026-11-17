@@ -323,18 +323,13 @@ Item {
                     anchors.margins: 30
                     spacing: 30
 
-                    Rectangle {
+                    // el icono de Nova Play ya trae su cuadro oscuro redondeado: se muestra solo, sin otro marco alrededor
+                    Image {
                         Layout.preferredWidth: 190
                         Layout.preferredHeight: 190
-                        radius: 34
-                        color: "#121530"
-                        border.color: "#1FFFFFFF"
-                        Image {
-                            anchors.centerIn: parent
-                            source: "qrc:/res/novaplay-n.png"
-                            width: 150; height: 150
-                            mipmap: true
-                        }
+                        source: "qrc:/res/novaplay-n.png"
+                        fillMode: Image.PreserveAspectFit
+                        mipmap: true
                     }
 
                     ColumnLayout {
@@ -396,8 +391,9 @@ Item {
                                 text: myHost && myHost.online ? qsTr("Jugar") : qsTr("Encender mi consola")
                                 enabled: !!myHost && play.canStart && !waking && !myHost.starting && (myHost.online || myHost.asleep)
                                 highlighted: true
-                                Material.accent: myHost && myHost.online ? "#EEF0FA" : violet
-                                Material.foreground: myHost && myHost.online ? "#0A0B16" : "#FFFFFF"
+                                // morado de la marca con texto blanco (el blanco con texto oscuro no se leia: Material pinta el texto en blanco)
+                                Material.accent: violet
+                                Material.foreground: "#FFFFFF"
                                 font.pointSize: 14
                                 font.weight: Font.DemiBold
                                 Layout.preferredHeight: 52
@@ -437,10 +433,16 @@ Item {
                     color: mist
                 }
                 Label {
-                    text: "<a href='#'>" + qsTr("Cerrar sesión") + "</a>"
-                    textFormat: Text.RichText
-                    linkColor: "#B98AFF"
-                    onLinkActivated: { NovaApi.logout(); accountId = ""; play = null; myHost = null }
+                    text: qsTr("Cerrar sesión")
+                    color: logoutArea.containsMouse ? "#FFFFFF" : "#B98AFF"
+                    font.underline: logoutArea.containsMouse
+                    MouseArea {
+                        id: logoutArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { NovaApi.logout(); accountId = ""; play = null; myHost = null }
+                    }
                 }
             }
         }

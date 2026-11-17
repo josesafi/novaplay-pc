@@ -173,6 +173,10 @@ void NetProbe::run(QString host)
     setPhase(2);
     double mbps = bandwidth(addr.toString());
     if (m_Cancel) { stopped(); return; }
+    if (mbps < 0.1) {
+        fail(tr("No pudimos medir la velocidad de descarga: la conexión con el servidor de pruebas se cortó. Inténtalo de nuevo en un momento."));
+        return;
+    }
     setProgress(1.0);
 
     QVariantMap r;

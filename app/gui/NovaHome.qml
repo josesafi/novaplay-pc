@@ -4,6 +4,8 @@ import QtQuick.Layouts 1.3
 import QtQuick.Controls.Material 2.2
 
 import NovaApi 1.0
+import ComputerManager 1.0
+import ComputerModel 1.0
 
 // Nova Play: pantalla principal propia. Sin sesion: iniciar sesion con la cuenta de novawebcolombia.com (con verificacion en dos
 // pasos si la tiene). Con sesion: saludo, saldo y tiempo de juego, y la consola del jugador con «Encender mi consola» / «Jugar».
@@ -28,6 +30,68 @@ Item {
     property string loadError: ""
     property bool waking: false
     property string wakeError: ""
+    // «Jugar» de un toque
+    property bool connecting: false
+    property string connectMsg: ""
+    property string playHost: ""
+    property int playPort: 47989
+    property int pairIndex: -1
+
+    ComputerModel { id: computerModel }
+    Component.onCompleted: computerModel.initialize(ComputerManager)
+
+    function failPlay(msg) {
+        connecting = false
+        wakeError = msg
+    }
+    function openApps(index) {
+        connecting = false
+        var component = Qt.createComponent("AppView.qml")
+        var view = component.createObject(stackView, {"computerIndex": index, "objectName": computerModel.computerName(index)})
+        stackView.push(view)
+    }
+    // agrega la consola por su direccion publica; la primera vez empareja este PC sin codigos (el codigo se registra en la cuenta
+    // por la API y el agente de la consola lo confirma) y abre la lista de apps de la consola
+    function startPlay() {
+        var addr = myHost.publicHost || ""
+        var colon = addr.lastIndexOf(":")
+        playHost = colon > 0 && addr.indexOf(":") === colon ? addr.substring(0, colon) : addr
+        playPort = colon > 0 && addr.indexOf(":") === colon ? parseInt(addr.substring(colon + 1)) : 47989
+        wakeError = ""
+        connecting = true
+        connectMsg = qsTr("Conectando con tu consola…")
+        ComputerManager.addNewHostManually(addr)
+    }
+    Connections {
+        target: ComputerManager
+        function onComputerAddCompleted(success, detectedPortBlocking) {
+            if (!connecting) return
+            if (!success) { failPlay(qsTr("No pudimos conectar con tu consola. Revisa tu internet e inténtalo de nuevo.")); return }
+            var index = computerModel.findComputerByAddress(playHost, playPort)
+            if (index < 0) { failPlay(qsTr("No encontramos tu consola. Inténtalo de nuevo.")); return }
+            if (computerModel.isComputerPaired(index)) { openApps(index); return }
+            connectMsg = qsTr("Preparando tu PC para jugar (solo la primera vez)…")
+            var pin = computerModel.generatePinString()
+            NovaApi.post("/api/v1/accounts/" + accountId + "/play/devices", { hostId: myHost.id, pin: pin, name: "Nova Play PC" }, function(status, body) {
+                if (status !== 200 && status !== 201) {
+                    failPlay((body && body.error && body.error.message) || (body && body.message) || qsTr("No se pudo preparar tu PC. Inténtalo de nuevo."))
+                    return
+                }
+                pairIndex = index
+                computerModel.pairComputer(index, pin)
+            })
+        }
+    }
+    Connections {
+        target: computerModel
+        function onPairingCompleted(error) {
+            if (!connecting || pairIndex < 0) return
+            var index = pairIndex
+            pairIndex = -1
+            if (error) failPlay(qsTr("No se pudo emparejar tu PC con la consola. Inténtalo de nuevo en un minuto."))
+            else openApps(index)
+        }
+    }
 
     function money(minor) {
         var pesos = Math.max(0, Math.round((minor || 0) / 100))
@@ -212,11 +276,21 @@ Item {
                     id: loginButton
                     text: loginCol.busy ? "" : (loginCol.twoFactor ? qsTr("Verificar") : qsTr("Entrar"))
                     enabled: !loginCol.busy && (loginCol.twoFactor ? codeField.text.length >= 6 : (emailField.text.length > 3 && passwordField.text.length > 0))
-                    highlighted: true
-                    Material.accent: violet
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
                     Layout.topMargin: 6
+                    background: Rectangle {
+                        radius: height / 2
+                        color: !loginButton.enabled ? "#3A2F5C" : loginButton.down ? "#7F33E6" : loginButton.hovered ? "#AE6BFF" : violet
+                    }
+                    contentItem: Label {
+                        text: loginButton.text
+                        font.pointSize: 13
+                        font.weight: Font.DemiBold
+                        color: loginButton.enabled ? "#FFFFFF" : "#9A93B5"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     onClicked: loginCol.submit()
                     BusyIndicator {
                         anchors.centerIn: parent
@@ -349,13 +423,13 @@ Item {
                         RowLayout {
                             spacing: 10
                             BusyIndicator {
-                                visible: waking || (myHost && myHost.starting)
+                                visible: waking || connecting || (myHost && myHost.starting)
                                 running: visible
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
                             }
                             Rectangle {
-                                visible: !(waking || (myHost && myHost.starting))
+                                visible: !(waking || connecting || (myHost && myHost.starting))
                                 width: 10; height: 10; radius: 5
                                 color: myHost && myHost.online ? ok : myHost && myHost.asleep ? electric : mist
                             }
@@ -363,6 +437,7 @@ Item {
                                 color: frost
                                 font.pointSize: 13
                                 text: !myHost ? qsTr("Escríbenos a soporte para asignarte una consola.")
+                                     : connecting ? connectMsg
                                      : (waking || myHost.starting) ? qsTr("Encendiendo tu consola… estará lista en 20 a 30 segundos.")
                                      : myHost.online ? qsTr("Encendida y lista para jugar")
                                      : myHost.asleep ? qsTr("Apagada para ahorrar energía")
@@ -389,17 +464,27 @@ Item {
                             Button {
                                 id: playButton
                                 text: myHost && myHost.online ? qsTr("Jugar") : qsTr("Encender mi consola")
-                                enabled: !!myHost && play.canStart && !waking && !myHost.starting && (myHost.online || myHost.asleep)
-                                highlighted: true
-                                // morado de la marca con texto blanco (el blanco con texto oscuro no se leia: Material pinta el texto en blanco)
-                                Material.accent: violet
-                                Material.foreground: "#FFFFFF"
+                                enabled: !!myHost && play.canStart && !waking && !connecting && !myHost.starting && (myHost.online || myHost.asleep)
                                 font.pointSize: 14
                                 font.weight: Font.DemiBold
                                 Layout.preferredHeight: 52
                                 Layout.preferredWidth: 230
+                                // diseno propio y fijo: morado de la marca con texto blanco (el tema de Windows lo pintaba blanco)
+                                background: Rectangle {
+                                    radius: height / 2
+                                    color: !playButton.enabled ? "#3A2F5C" : playButton.down ? "#7F33E6" : playButton.hovered ? "#AE6BFF" : violet
+                                    border.width: playButton.visualFocus ? 2 : 0
+                                    border.color: "#FFFFFF"
+                                }
+                                contentItem: Label {
+                                    text: playButton.text
+                                    font: playButton.font
+                                    color: playButton.enabled ? "#FFFFFF" : "#9A93B5"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
                                 onClicked: {
-                                    if (myHost.online) navigateTo("qrc:/gui/PcView.qml", PcView)
+                                    if (myHost.online) startPlay()
                                     else wake()
                                 }
                             }

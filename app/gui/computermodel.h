@@ -37,6 +37,11 @@ public:
 
     Q_INVOKABLE void pairComputer(int computerIndex, QString pin);
 
+    // Nova Play: «Jugar» de un toque (buscar la consola por su direccion publica, saber si ya esta emparejada y su nombre)
+    Q_INVOKABLE int findComputerByAddress(QString host, int port);
+    Q_INVOKABLE bool isComputerPaired(int computerIndex);
+    Q_INVOKABLE QString computerName(int computerIndex);
+
     Q_INVOKABLE void testConnectionForComputer(int computerIndex);
 
     Q_INVOKABLE void wakeComputer(int computerIndex);

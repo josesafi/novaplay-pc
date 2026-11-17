@@ -220,6 +220,49 @@ void ComputerModel::pairComputer(int computerIndex, QString pin)
     m_ComputerManager->pairHost(m_Computers[computerIndex], pin);
 }
 
+int ComputerModel::findComputerByAddress(QString host, int port)
+{
+    // la lista puede haber cambiado (se acaba de agregar la consola): se toma la del administrador, en su mismo orden
+    QVector<NvComputer*> list = m_ComputerManager->getComputers();
+    if (m_Computers != list) {
+        beginResetModel();
+        m_Computers = list;
+        endResetModel();
+    }
+    if (port <= 0) {
+        port = DEFAULT_HTTP_PORT;
+    }
+    for (int i = 0; i < m_Computers.count(); i++) {
+        NvComputer* computer = m_Computers[i];
+        QReadLocker lock(&computer->lock);
+        const NvAddress candidates[] = { computer->manualAddress, computer->activeAddress };
+        for (const NvAddress& a : candidates) {
+            if (!a.isNull() && a.address().compare(host, Qt::CaseInsensitive) == 0 && (a.port() == port || (a.port() == 0 && port == DEFAULT_HTTP_PORT))) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+bool ComputerModel::isComputerPaired(int computerIndex)
+{
+    if (computerIndex < 0 || computerIndex >= m_Computers.count()) {
+        return false;
+    }
+    QReadLocker lock(&m_Computers[computerIndex]->lock);
+    return m_Computers[computerIndex]->pairState == NvComputer::PS_PAIRED;
+}
+
+QString ComputerModel::computerName(int computerIndex)
+{
+    if (computerIndex < 0 || computerIndex >= m_Computers.count()) {
+        return QString();
+    }
+    QReadLocker lock(&m_Computers[computerIndex]->lock);
+    return m_Computers[computerIndex]->name;
+}
+
 void ComputerModel::handlePairingCompleted(NvComputer*, QString error)
 {
     emit pairingCompleted(error.isEmpty() ? QVariant() : error);

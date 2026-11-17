@@ -489,6 +489,17 @@ Item {
                                 }
                             }
                             Button {
+                                text: qsTr("Prueba de red")
+                                flat: true
+                                Layout.preferredHeight: 52
+                                onClicked: {
+                                    var addr = (myHost && myHost.publicHost) || ""
+                                    var colon = addr.lastIndexOf(":")
+                                    if (colon > 0 && addr.indexOf(":") === colon) addr = addr.substring(0, colon)
+                                    stackView.push("qrc:/gui/NetTest.qml", addr ? {"host": addr} : {})
+                                }
+                            }
+                            Button {
                                 text: qsTr("Mis consolas")
                                 flat: true
                                 Layout.preferredHeight: 52

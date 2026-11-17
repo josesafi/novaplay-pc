@@ -177,6 +177,7 @@ SOURCES += \
     backend/nvpairingmanager.cpp \
     backend/computermanager.cpp \
     backend/novaapi.cpp \
+    backend/netprobe.cpp \
     backend/boxartmanager.cpp \
     backend/richpresencemanager.cpp \
     cli/commandlineparser.cpp \
@@ -222,6 +223,7 @@ HEADERS += \
     backend/nvpairingmanager.h \
     backend/computermanager.h \
     backend/novaapi.h \
+    backend/netprobe.h \
     backend/boxartmanager.h \
     backend/richpresencemanager.h \
     cli/commandlineparser.h \

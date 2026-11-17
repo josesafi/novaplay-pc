@@ -48,6 +48,8 @@ void AutoUpdateChecker::start()
 #endif
 
     // We'll get a callback when this is finished
+    // Nova Play: sin buscar versiones de Moonlight (se actualiza con su propio instalador)
+    return;
     QUrl url("https://moonlight-stream.org/updates/qt.json");
     QNetworkRequest request(url);
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)

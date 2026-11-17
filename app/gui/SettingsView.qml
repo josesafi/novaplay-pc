@@ -103,7 +103,7 @@ Flickable {
             id: basicSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Basic Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Basic Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -879,7 +879,7 @@ Flickable {
             id: audioSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Audio Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Audio Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -972,7 +972,7 @@ Flickable {
             id: hostSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Host Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Host Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1012,7 +1012,7 @@ Flickable {
             id: uiSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("UI Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("UI Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1321,7 +1321,7 @@ Flickable {
             id: inputSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Input Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Input Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1469,7 +1469,7 @@ Flickable {
             id: gamepadSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Gamepad Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Gamepad Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1544,7 +1544,7 @@ Flickable {
             id: advancedSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Advanced Settings") + "</font>"
+            title: "<font color=\"#B98AFF\">" + qsTr("Advanced Settings") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1809,6 +1809,39 @@ Flickable {
                     ToolTip.text: qsTr("Display real-time stream performance information while streaming.") + "\n\n" +
                                   qsTr("You can toggle it at any time while streaming using Ctrl+Alt+Shift+S or Select+L1+R1+X.") + "\n\n" +
                                   qsTr("The performance overlay is not supported on Steam Link or Raspberry Pi.")
+                }
+            }
+        }
+
+        GroupBox {
+            id: aboutGroupBox
+            width: (parent.width - (parent.leftPadding + parent.rightPadding))
+            padding: 12
+            title: "<font color=\"#B98AFF\">" + qsTr("Acerca de Nova Play") + "</font>"
+            font.pointSize: 12
+
+            Column {
+                anchors.fill: parent
+                spacing: 6
+                Label {
+                    width: parent.width
+                    text: qsTr("Nova Play · versión %1").arg(SystemProperties.versionString)
+                    font.pointSize: 12
+                    font.bold: true
+                }
+                Label {
+                    width: parent.width
+                    text: qsTr("Juegos en la nube de NovaWeb Colombia. Ayuda y soporte en novawebcolombia.com.")
+                    font.pointSize: 10
+                    wrapMode: Text.Wrap
+                }
+                Label {
+                    width: parent.width
+                    // aviso legal que exige la licencia GPLv3 de los componentes de transmision
+                    text: qsTr("Incluye componentes de software libre bajo la licencia GPLv3 (proyecto Moonlight). Código fuente: github.com/josesafi/novaplay-pc")
+                    font.pointSize: 9
+                    color: "#8D93B0"
+                    wrapMode: Text.Wrap
                 }
             }
         }

@@ -15,8 +15,8 @@
           Version="!(bind.PackageVersion.Moonlight_x64)"
           Manufacturer="NovaWeb Colombia"
           UpgradeCode="b8d1e5c2-2f47-4e09-a6d3-5c8f1b7e2a64"
-          HelpUrl="https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide"
-          UpdateUrl="https://github.com/moonlight-stream/moonlight-qt/releases"
+          HelpUrl="https://novawebcolombia.com/nova-play.html"
+          UpdateUrl="https://novawebcolombia.com/nova-play.html"
           DisableModify="yes"
           IconSourceFile="..\..\app\moonlight.ico">
 
@@ -49,7 +49,7 @@
       <bal:WixStandardBootstrapperApplication ShowVersion="yes"
                                               LicenseFile="license.rtf"
                                               LogoFile="..\..\app\moonlight_wix.png"
-                                              LaunchTarget="[InstallFolder]\Moonlight.exe"
+                                              LaunchTarget="[InstallFolder]\NovaPlay.exe"
                                               ThemeFile="RtfTheme.xml"
                                               Theme="rtfLicense" />
       <Payload Name="Moonlight.ico" SourceFile="..\..\app\moonlight.ico" Compressed="yes" />
@@ -98,7 +98,7 @@
 
       <MsiPackage Id="Moonlight_x64"
                   SourceFile="$(env.BUILD_ROOT)\build-x64-$(env.BUILD_CONFIG)\Moonlight.msi"
-                  Name="Moonlight_x64.msi"
+                  Name="NovaPlay_x64.msi"
                   InstallCondition="(VersionNT64 AND NOT NativeMachine) OR (NativeMachine = 34404)"
                   Vital="yes">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
@@ -107,7 +107,7 @@
 
       <MsiPackage Id="Moonlight_arm64"
                   SourceFile="$(env.BUILD_ROOT)\build-arm64-$(env.BUILD_CONFIG)\Moonlight.msi"
-                  Name="Moonlight_arm64.msi"
+                  Name="NovaPlay_arm64.msi"
                   InstallCondition="NativeMachine = 43620"
                   Vital="yes">
         <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />

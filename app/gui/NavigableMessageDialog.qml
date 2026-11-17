@@ -10,7 +10,7 @@ NavigableDialog {
     property alias imageSrc: dialogImage.source
 
     property string helpText
-    property string helpUrl : "https://github.com/moonlight-stream/moonlight-docs/wiki/Troubleshooting"
+    property string helpUrl : "https://novawebcolombia.com/nova-play.html#ayuda"
     property string helpTextSeparator : " "
 
     onOpened: {

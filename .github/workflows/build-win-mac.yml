@@ -70,6 +70,7 @@ jobs:
         shell: cmd
         run: |
           set "PATH=%QT_PATH%;%PATH%"
+          lrelease app\languages\qml_es.ts -qm app\languages\qml_es.qm
           scripts\build-arch.bat Release x64
         env:
           QT_PATH: ${{ runner.workspace }}\Qt\${{ matrix.qt_version }}\msvc2022_64\bin

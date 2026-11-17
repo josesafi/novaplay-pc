@@ -332,7 +332,7 @@ CenteredGridView {
 
         // Using Setup-Guide here instead of Troubleshooting because it's likely that users
         // will arrive here by forgetting to enable GameStream or not forwarding ports.
-        helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide"
+        helpUrl: "https://novawebcolombia.com/nova-play.html#ayuda"
     }
 
     NavigableMessageDialog {

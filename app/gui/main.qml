@@ -345,7 +345,7 @@ ApplicationWindow {
                 ToolTip.text: qsTr("Join our community on Discord")
 
                 // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://moonlight-stream.org/discord");
+                onClicked: Qt.openUrlExternally("https://novawebcolombia.com/nova-play.html#ayuda");
 
                 Keys.onDownPressed: {
                     stackView.currentItem.forceActiveFocus(Qt.TabFocus)
@@ -489,7 +489,7 @@ ApplicationWindow {
         text: qsTr("No functioning hardware accelerated video decoder was detected by Nova Play. " +
                    "Your streaming performance may be severely degraded in this configuration.")
         helpText: qsTr("Click the Help button for more information on solving this problem.")
-        helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Fixing-Hardware-Decoding-Problems"
+        helpUrl: "https://novawebcolombia.com/nova-play.html#ayuda"
     }
 
     ErrorMessageDialog {
@@ -497,7 +497,7 @@ ApplicationWindow {
         text: qsTr("Hardware acceleration doesn't work on XWayland. Continuing on XWayland may result in poor streaming performance. " +
                    "Try running with QT_QPA_PLATFORM=wayland or switch to X11.")
         helpText: qsTr("Click the Help button for more information.")
-        helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Fixing-Hardware-Decoding-Problems"
+        helpUrl: "https://novawebcolombia.com/nova-play.html#ayuda"
     }
 
     NavigableMessageDialog {
@@ -505,7 +505,7 @@ ApplicationWindow {
         standardButtons: Dialog.Ok | Dialog.Cancel
         text: qsTr("This version of Nova Play isn't optimized for your PC. Please download the '%1' version of Nova Play for the best streaming performance.").arg(SystemProperties.friendlyNativeArchName)
         onAccepted: {
-            Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-qt/releases");
+            Qt.openUrlExternally("https://novawebcolombia.com/nova-play.html#descargar");
         }
     }
 
@@ -515,7 +515,7 @@ ApplicationWindow {
         text: qsTr("Nova Play detected gamepads without a mapping:") + "\n" + unmappedGamepads
         helpTextSeparator: "\n\n"
         helpText: qsTr("Click the Help button for information on how to map your gamepads.")
-        helpUrl: "https://github.com/moonlight-stream/moonlight-docs/wiki/Gamepad-Mapping"
+        helpUrl: "https://novawebcolombia.com/nova-play.html#ayuda"
     }
 
     // This dialog appears when quitting via keyboard or gamepad button

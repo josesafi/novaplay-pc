@@ -3,6 +3,10 @@
         <file>gui/main.qml</file>
         <file>gui/PcView.qml</file>
         <file>gui/NovaHome.qml</file>
+        <file>gui/NovaLogin.qml</file>
+        <file>gui/NovaHumanCheck.qml</file>
+        <file>gui/NovaPrimaryButton.qml</file>
+        <file>gui/NovaSecurity.qml</file>
         <file>gui/NetTest.qml</file>
         <file>gui/AppView.qml</file>
         <file>gui/SettingsView.qml</file>

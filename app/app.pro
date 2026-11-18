@@ -50,7 +50,7 @@ win32 {
     }
 
     INCLUDEPATH += $$PWD/../libs/windows/include
-    LIBS += ws2_32.lib winmm.lib dxva2.lib ole32.lib gdi32.lib user32.lib d3d9.lib dwmapi.lib dbghelp.lib
+    LIBS += ws2_32.lib winmm.lib dxva2.lib ole32.lib gdi32.lib user32.lib d3d9.lib dwmapi.lib dbghelp.lib advapi32.lib
 }
 macx:!disable-prebuilts {
     !exists($$PWD/../libs/mac) {
@@ -177,6 +177,7 @@ SOURCES += \
     backend/nvpairingmanager.cpp \
     backend/computermanager.cpp \
     backend/novaapi.cpp \
+    backend/qrcodegen/qrcodegen.cpp \
     backend/netprobe.cpp \
     backend/boxartmanager.cpp \
     backend/richpresencemanager.cpp \
@@ -223,6 +224,7 @@ HEADERS += \
     backend/nvpairingmanager.h \
     backend/computermanager.h \
     backend/novaapi.h \
+    backend/qrcodegen/qrcodegen.hpp \
     backend/netprobe.h \
     backend/boxartmanager.h \
     backend/richpresencemanager.h \

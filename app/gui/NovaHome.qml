@@ -7,8 +7,8 @@ import NovaApi 1.0
 import ComputerManager 1.0
 import ComputerModel 1.0
 
-// Nova Play: pantalla principal propia. Sin sesion: iniciar sesion con la cuenta de novawebcolombia.com (con verificacion en dos
-// pasos si la tiene). Con sesion: saludo, saldo y tiempo de juego, y la consola del jugador con «Encender mi consola» / «Jugar».
+// Nova Play: pantalla principal propia. Sin sesion: iniciar sesion o crear la cuenta de novawebcolombia.com sin salir de la app
+// (NovaLogin.qml; con verificacion en dos pasos si la tiene). Con sesion: saludo, saldo y tiempo de juego, y la consola del jugador con «Encender mi consola» / «Jugar».
 Item {
     id: home
     objectName: qsTr("Nova Play")
@@ -38,7 +38,7 @@ Item {
     property int pairIndex: -1
 
     ComputerModel { id: computerModel }
-    Component.onCompleted: computerModel.initialize(ComputerManager)
+    Component.onCompleted: { computerModel.initialize(ComputerManager); NovaApi.refreshSession() }
 
     function failPlay(msg) {
         connecting = false
@@ -173,159 +173,16 @@ Item {
         function onSessionExpired() { accountId = ""; play = null; myHost = null }
     }
 
-    // ------------------------------------------------------------------ inicio de sesion
-    Item {
+    // ------------------------------------------------------------------ inicio de sesion y crear cuenta (NovaLogin.qml)
+    NovaLogin {
         anchors.fill: parent
         visible: !NovaApi.loggedIn
+    }
 
-        Rectangle {
-            id: loginCard
-            width: Math.min(440, parent.width - 48)
-            height: loginCol.implicitHeight + 64
-            anchors.centerIn: parent
-            radius: 24
-            color: "#E60D1022"
-            border.color: "#14FFFFFF"
-            border.width: 1
-
-            ColumnLayout {
-                id: loginCol
-                anchors.fill: parent
-                anchors.margins: 32
-                spacing: 14
-
-                property bool twoFactor: false
-                property bool busy: false
-                property string error: ""
-
-                function submit() {
-                    error = ""
-                    busy = true
-                    if (twoFactor) {
-                        NovaApi.loginTwoFactor(codeField.text, function(ok, need2fa, msg) {
-                            busy = false
-                            if (!ok) error = msg
-                        })
-                    } else {
-                        NovaApi.login(emailField.text, passwordField.text, function(ok, need2fa, msg) {
-                            busy = false
-                            if (!ok) error = msg
-                            else if (need2fa) { twoFactor = true; codeField.forceActiveFocus() }
-                        })
-                    }
-                }
-
-                Image {
-                    source: "qrc:/res/novaplay-logo.png"
-                    fillMode: Image.PreserveAspectFit
-                    Layout.preferredHeight: 34
-                    Layout.preferredWidth: 220
-                    Layout.alignment: Qt.AlignHCenter
-                    mipmap: true
-                }
-                Label {
-                    text: loginCol.twoFactor ? qsTr("Verificación en dos pasos") : qsTr("Inicia sesión")
-                    font.pointSize: 20
-                    font.weight: Font.Bold
-                    color: frost
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: 10
-                }
-                Label {
-                    text: loginCol.twoFactor ? qsTr("Escribe el código de 6 dígitos de tu app de autenticación (o un código de recuperación).")
-                                             : qsTr("Usa la misma cuenta de novawebcolombia.com.")
-                    color: mist
-                    wrapMode: Text.WordWrap
-                    horizontalAlignment: Text.AlignHCenter
-                    Layout.fillWidth: true
-                }
-                TextField {
-                    id: emailField
-                    visible: !loginCol.twoFactor
-                    placeholderText: qsTr("Correo")
-                    inputMethodHints: Qt.ImhEmailCharactersOnly | Qt.ImhNoAutoUppercase
-                    text: NovaApi.email
-                    Layout.fillWidth: true
-                    Layout.topMargin: 6
-                    Keys.onReturnPressed: passwordField.forceActiveFocus()
-                }
-                TextField {
-                    id: passwordField
-                    visible: !loginCol.twoFactor
-                    placeholderText: qsTr("Contraseña")
-                    echoMode: TextInput.Password
-                    Layout.fillWidth: true
-                    Keys.onReturnPressed: loginCol.submit()
-                }
-                TextField {
-                    id: codeField
-                    visible: loginCol.twoFactor
-                    placeholderText: qsTr("Código")
-                    inputMethodHints: Qt.ImhDigitsOnly
-                    Layout.fillWidth: true
-                    Keys.onReturnPressed: loginCol.submit()
-                }
-                Label {
-                    visible: loginCol.error !== ""
-                    text: loginCol.error
-                    color: "#FF8A8A"
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-                Button {
-                    id: loginButton
-                    text: loginCol.busy ? "" : (loginCol.twoFactor ? qsTr("Verificar") : qsTr("Entrar"))
-                    enabled: !loginCol.busy && (loginCol.twoFactor ? codeField.text.length >= 6 : (emailField.text.length > 3 && passwordField.text.length > 0))
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 52
-                    Layout.topMargin: 6
-                    background: Rectangle {
-                        radius: height / 2
-                        color: !loginButton.enabled ? "#3A2F5C" : loginButton.down ? "#7F33E6" : loginButton.hovered ? "#AE6BFF" : violet
-                    }
-                    contentItem: Label {
-                        text: loginButton.text
-                        font.pointSize: 13
-                        font.weight: Font.DemiBold
-                        color: loginButton.enabled ? "#FFFFFF" : "#9A93B5"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    onClicked: loginCol.submit()
-                    BusyIndicator {
-                        anchors.centerIn: parent
-                        width: 30; height: 30
-                        running: loginCol.busy
-                        visible: loginCol.busy
-                        Material.accent: "#FFFFFF"
-                    }
-                }
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    spacing: 18
-                    Label {
-                        text: "<a href='https://panel.novawebcolombia.com/forgot-password'>" + qsTr("¿Olvidaste tu contraseña?") + "</a>"
-                        textFormat: Text.RichText
-                        linkColor: mist
-                        onLinkActivated: Qt.openUrlExternally(link)
-                    }
-                    Label {
-                        text: "<a href='https://panel.novawebcolombia.com/register'>" + qsTr("Crear cuenta") + "</a>"
-                        textFormat: Text.RichText
-                        linkColor: "#B98AFF"
-                        onLinkActivated: Qt.openUrlExternally(link)
-                    }
-                }
-                Label {
-                    visible: loginCol.twoFactor
-                    text: "<a href='#'>" + qsTr("Volver") + "</a>"
-                    textFormat: Text.RichText
-                    linkColor: mist
-                    Layout.alignment: Qt.AlignHCenter
-                    onLinkActivated: { loginCol.twoFactor = false; loginCol.error = "" }
-                }
-            }
-        }
+    // verificacion en dos pasos (autenticador)
+    NovaSecurity {
+        id: securityPopup
+        parent: home
     }
 
     // ------------------------------------------------------------------ inicio (con sesion)
@@ -527,6 +384,18 @@ Item {
                 Label {
                     text: NovaApi.email ? qsTr("Conectado como %1").arg(NovaApi.email) : ""
                     color: mist
+                }
+                Label {
+                    text: NovaApi.twoFactorEnabled ? qsTr("Verificación en dos pasos: activa") : qsTr("Activar la verificación en dos pasos")
+                    color: securityArea.containsMouse ? "#FFFFFF" : (NovaApi.twoFactorEnabled ? ok : "#B98AFF")
+                    font.underline: securityArea.containsMouse
+                    MouseArea {
+                        id: securityArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: securityPopup.open()
+                    }
                 }
                 Label {
                     text: qsTr("Cerrar sesión")

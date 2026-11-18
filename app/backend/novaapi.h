@@ -19,6 +19,12 @@ class NovaApi : public QObject
     Q_PROPERTY(bool loggedIn READ loggedIn NOTIFY sessionChanged)
     Q_PROPERTY(QString firstName READ firstName NOTIFY sessionChanged)
     Q_PROPERTY(QString email READ email NOTIFY sessionChanged)
+    Q_PROPERTY(bool twoFactorEnabled READ twoFactorEnabled NOTIFY sessionChanged)
+    // recordar el correo y la contrasena en este PC (la contrasena va al Administrador de credenciales de Windows, cifrada por Windows)
+    Q_PROPERTY(bool rememberEmail READ rememberEmail WRITE setRememberEmail NOTIFY rememberChanged)
+    Q_PROPERTY(bool rememberPassword READ rememberPassword WRITE setRememberPassword NOTIFY rememberChanged)
+    Q_PROPERTY(bool canRememberPassword READ canRememberPassword CONSTANT)
+    Q_PROPERTY(QString savedEmail READ savedEmail NOTIFY rememberChanged)
 
 public:
     explicit NovaApi(QObject* parent = nullptr);
@@ -28,6 +34,27 @@ public:
     bool loggedIn() const { return !m_Session.isEmpty(); }
     QString firstName() const { return m_FirstName; }
     QString email() const { return m_Email; }
+    bool twoFactorEnabled() const { return m_TwoFactorEnabled; }
+    bool rememberEmail() const;
+    void setRememberEmail(bool on);
+    bool rememberPassword() const;
+    void setRememberPassword(bool on);
+    bool canRememberPassword() const;
+    QString savedEmail() const;
+
+    // contrasena guardada para ese correo (vacio si no hay); se guarda sola al iniciar sesion si rememberPassword esta activo
+    Q_INVOKABLE QString savedPassword(QString email) const;
+    Q_INVOKABLE void forgetSavedPassword();
+    // llamadas SIN sesion (crear cuenta, recuperar contrasena, pregunta antibot): callback(status, body)
+    Q_INVOKABLE void publicGet(QString path, QJSValue callback);
+    Q_INVOKABLE void publicPost(QString path, QVariant body, QJSValue callback);
+    // vuelve a leer la sesion (p. ej. tras activar el autenticador)
+    Q_INVOKABLE void refreshSession();
+    // QR de un texto (otpauth://…): {size, modules: [bool…]} fila por fila
+    Q_INVOKABLE QVariantMap qrCode(QString text) const;
+    Q_INVOKABLE void copyText(QString text) const;
+    // mensaje claro de un error de la API (lo mismo que usa el inicio de sesion)
+    Q_INVOKABLE QString describeError(int status, QVariant body) const { return errorMessage(status, body); }
 
     // callback(ok, twoFactorRequired, message)
     Q_INVOKABLE void login(QString email, QString password, QJSValue callback);
@@ -42,8 +69,11 @@ signals:
     void sessionChanged();
     // la sesion vencio o se cerro desde otro lado: la app vuelve a pedir el inicio de sesion
     void sessionExpired();
+    void rememberChanged();
 
 private:
+    void storePassword(const QString& email, const QString& password);
+    void deletePassword(const QString& email);
     using Done = std::function<void(int status, const QVariant& body)>;
     void send(const QByteArray& method, const QString& path, const QVariant& body, bool authed, Done done);
     void callJs(QJSValue callback, const QJSValueList& args);
@@ -59,5 +89,7 @@ private:
     QString m_FirstName;
     QString m_Email;
     QString m_Challenge;
+    QString m_PendingPassword;
+    bool m_TwoFactorEnabled = false;
     QJSEngine* m_Engine = nullptr;
 };

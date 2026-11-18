@@ -3,6 +3,8 @@
 #include "settings/streamingpreferences.h"
 #include "backend/computermanager.h"
 
+#include <QStringList>
+
 #include "SDL_compat.h"
 
 struct GamepadState {
@@ -31,6 +33,10 @@ struct GamepadState {
     float lastAccelEventData[SDL_arraysize(SDL_ControllerSensorEvent::data)];
     uint32_t lastAccelEventTime;
 #endif
+
+    // Nova Play: desde cuando estan Select+Start (solos) apretados, y no tomar la soltada de Start como pulsacion larga
+    uint32_t novaComboSince;
+    bool novaSkipStartRelease;
 
     int buttons;
     short lsX, lsY;
@@ -155,6 +161,12 @@ public:
     static
     QString getUnmappedGamepads();
 
+    // Nova Play: menu de ajustes de la transmision (NovaMenu)
+    bool takeNovaMenuCombo();
+    bool isAbsoluteMouseMode() { return m_AbsoluteMouseMode; }
+    void setAbsoluteMouseMode(bool absolute);
+    QStringList connectedGamepadNames();
+
 private:
     enum KeyCombo {
         KeyComboQuit,
@@ -168,6 +180,7 @@ private:
         KeyComboTogglePointerRegionLock,
         KeyComboQuitAndExit,
         KeyComboToggleKeyboardGrab,
+        KeyComboNovaMenu,
         KeyComboMax
     };
 

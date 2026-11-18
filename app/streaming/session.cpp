@@ -1,4 +1,6 @@
 #include "session.h"
+#include "novamenu.h"
+#include <QSettings>
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
 #include "backend/richpresencemanager.h"
@@ -28,6 +30,7 @@
 #define SDL_CODE_GAMECONTROLLER_SET_MOTION_EVENT_STATE 103
 #define SDL_CODE_GAMECONTROLLER_SET_CONTROLLER_LED 104
 #define SDL_CODE_GAMECONTROLLER_SET_ADAPTIVE_TRIGGERS 105
+#define SDL_CODE_NOVA_MENU_TICK 120
 
 #include <openssl/rand.h>
 
@@ -1271,9 +1274,11 @@ private:
     void run() override
     {
         // Only quit the running app if our session terminated gracefully
+        // (al reconectar desde el menu de Nova Play el juego NUNCA se cierra)
         bool shouldQuit =
                 !m_Session->m_UnexpectedTermination &&
-                m_Session->m_Preferences->quitAppAfter;
+                m_Session->m_Preferences->quitAppAfter &&
+                !m_Session->m_NovaReconnect;
 
         // Notify the UI
         if (shouldQuit) {
@@ -1500,6 +1505,30 @@ void Session::updateOptimalWindowDisplayMode()
     }
 
     SDL_SetWindowDisplayMode(m_Window, &bestMode);
+}
+
+void Session::toggleNovaMenu()
+{
+    if (m_NovaMenu != nullptr) {
+        m_NovaMenu->toggle();
+    }
+}
+
+void Session::novaRequestReconnect()
+{
+    // termina esta transmision como si la persona la cerrara (sin cerrar el juego); StreamSegue abre la nueva
+    m_NovaReconnect = true;
+    SDL_Event event;
+    SDL_zero(event);
+    event.type = SDL_QUIT;
+    event.quit.timestamp = SDL_GetTicks();
+    SDL_PushEvent(&event);
+}
+
+Session* Session::createReconnectSession()
+{
+    // mismas preferencias (ya guardadas por el menu), misma consola y misma app
+    return new Session(m_Computer, m_App, m_Preferences);
 }
 
 void Session::toggleFullscreen()
@@ -1960,6 +1989,21 @@ void Session::exec()
     // Switch to async logging mode when we enter the SDL loop
     StreamUtils::enterAsyncLoggingMode();
 
+    // Nova Play: menu flotante de ajustes (boton «N», Ctrl+Alt+Shift+N o Select+Start 1 s); se revisa cada 250 ms
+    {
+        QSettings novaSt;
+        m_NovaVolume = SDL_clamp(novaSt.value("novaplay/volume", 100).toInt(), 0, 100) / 100.0f;
+    }
+    m_NovaMenu = new NovaMenu(this);
+    SDL_TimerID novaMenuTimer = SDL_AddTimer(250, [](Uint32 interval, void*) -> Uint32 {
+        SDL_Event ev;
+        SDL_zero(ev);
+        ev.type = SDL_USEREVENT;
+        ev.user.code = SDL_CODE_NOVA_MENU_TICK;
+        SDL_PushEvent(&ev);
+        return interval;
+    }, nullptr);
+
     // Hijack this thread to be the SDL main thread. We have to do this
     // because we want to suspend all Qt processing until the stream is over.
     SDL_Event event;
@@ -1995,6 +2039,11 @@ void Session::exec()
             continue;
         }
 #endif
+        // Nova Play: con el menu abierto la entrada es para el menu, no para el juego
+        if (m_NovaMenu != nullptr && m_NovaMenu->handleEvent(event)) {
+            continue;
+        }
+
         switch (event.type) {
         case SDL_QUIT:
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
@@ -2035,6 +2084,11 @@ void Session::exec()
             case SDL_CODE_GAMECONTROLLER_SET_ADAPTIVE_TRIGGERS:
                 m_InputHandler->setAdaptiveTriggers((uint16_t)(uintptr_t)event.user.data1,
                                                     (DualSenseOutputReport *)event.user.data2);
+                break;
+            case SDL_CODE_NOVA_MENU_TICK:
+                if (m_NovaMenu != nullptr) {
+                    m_NovaMenu->tick();
+                }
                 break;
             default:
                 SDL_assert(false);
@@ -2308,6 +2362,10 @@ void Session::exec()
     }
 
 DispatchDeferredCleanup:
+    SDL_RemoveTimer(novaMenuTimer);
+    delete m_NovaMenu;
+    m_NovaMenu = nullptr;
+
     // Switch back to synchronous logging mode
     StreamUtils::exitAsyncLoggingMode();
 

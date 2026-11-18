@@ -334,3 +334,19 @@ void SdlInputHandler::updatePointerRegionLock()
 #endif
     }
 }
+
+// Nova Play: modo del raton desde el menu de ajustes (como Ctrl+Alt+Shift+M, sin volver a capturar si no estaba capturado)
+void SdlInputHandler::setAbsoluteMouseMode(bool absolute)
+{
+    if (m_AbsoluteMouseMode == absolute) {
+        return;
+    }
+    bool wasCaptured = isCaptureActive();
+    if (wasCaptured) {
+        setCaptureActive(false);
+    }
+    m_AbsoluteMouseMode = absolute;
+    if (wasCaptured) {
+        setCaptureActive(true);
+    }
+}

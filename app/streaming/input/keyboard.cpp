@@ -177,6 +177,13 @@ void SdlInputHandler::performSpecialKeyCombo(KeyCombo combo)
         updateKeyboardGrabState();
         break;
 
+    case KeyComboNovaMenu:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Detected Nova Play menu combo");
+        raiseAllKeys();
+        Session::get()->toggleNovaMenu();
+        break;
+
     default:
         Q_UNREACHABLE();
     }

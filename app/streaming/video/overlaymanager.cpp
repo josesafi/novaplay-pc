@@ -116,9 +116,40 @@ void OverlayManager::setOverlayRenderer(IOverlayRenderer* renderer)
     m_Renderer = renderer;
 }
 
+void OverlayManager::setOverlayCustomSurface(OverlayType type, SDL_Surface* surface)
+{
+    if (surface != nullptr) {
+        if (!m_Custom[type]) {
+            m_EnabledBeforeCustom[type] = m_Overlays[type].enabled;
+            m_Custom[type] = true;
+        }
+        m_Overlays[type].enabled = true;
+        SDL_Surface* old = (SDL_Surface*)SDL_AtomicSetPtr((void**)&m_Overlays[type].surface, surface);
+        if (m_Renderer != nullptr) {
+            m_Renderer->notifyOverlayUpdated(type);
+        }
+        if (old != nullptr) {
+            SDL_FreeSurface(old);
+        }
+        return;
+    }
+    if (!m_Custom[type]) {
+        return;
+    }
+    // vuelve al overlay de texto (o lo apaga si estaba apagado)
+    m_Custom[type] = false;
+    m_Overlays[type].enabled = m_EnabledBeforeCustom[type];
+    notifyOverlayUpdated(type);
+}
+
 void OverlayManager::notifyOverlayUpdated(OverlayType type)
 {
     if (m_Renderer == nullptr) {
+        return;
+    }
+
+    // Con una imagen propia (menu de Nova Play) el texto no la reemplaza
+    if (m_Custom[type]) {
         return;
     }
 

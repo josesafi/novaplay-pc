@@ -135,6 +135,12 @@ SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, i
     m_SpecialKeyCombos[KeyComboToggleKeyboardGrab].scanCode = SDL_SCANCODE_K;
     m_SpecialKeyCombos[KeyComboToggleKeyboardGrab].enabled = WMUtils::isRunningDesktopEnvironment();
 
+    // Nova Play: Ctrl+Alt+Shift+N abre los ajustes de la transmision
+    m_SpecialKeyCombos[KeyComboNovaMenu].keyCombo = KeyComboNovaMenu;
+    m_SpecialKeyCombos[KeyComboNovaMenu].keyCode = SDLK_n;
+    m_SpecialKeyCombos[KeyComboNovaMenu].scanCode = SDL_SCANCODE_N;
+    m_SpecialKeyCombos[KeyComboNovaMenu].enabled = true;
+
     m_OldIgnoreDevices = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES);
     m_OldIgnoreDevicesExcept = SDL_GetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT);
 

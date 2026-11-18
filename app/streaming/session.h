@@ -89,11 +89,14 @@ public:
     }
 };
 
+class NovaMenu;
+
 class Session : public QObject
 {
     Q_OBJECT
 
     friend class SdlInputHandler;
+    friend class NovaMenu;
     friend class DeferredSessionCleanupTask;
     friend class AsyncConnectionStartThread;
 
@@ -105,6 +108,11 @@ public:
     Q_INVOKABLE void start();
     Q_INVOKABLE void interrupt();
     Q_PROPERTY(QStringList launchWarnings MEMBER m_LaunchWarnings NOTIFY launchWarningsChanged);
+
+    // Nova Play: «Aplicar y reconectar» del menu de ajustes. Al terminar, StreamSegue crea otra sesion contra la misma consola
+    // (sin cerrar el juego) con createReconnectSession().
+    Q_INVOKABLE bool novaReconnectRequested() { return m_NovaReconnect; }
+    Q_INVOKABLE Session* createReconnectSession();
 
     static
     void getDecoderInfo(SDL_Window* window,
@@ -166,6 +174,11 @@ private:
                              int& width, int& height);
 
     void toggleFullscreen();
+
+    // Nova Play: abre o cierra el menu de ajustes de la transmision (Ctrl+Alt+Shift+N)
+    void toggleNovaMenu();
+
+    void novaRequestReconnect();
 
     void notifyMouseEmulationMode(bool enabled);
 
@@ -244,6 +257,11 @@ private:
     int drSubmitDecodeUnit(PDECODE_UNIT du);
 
     StreamingPreferences* m_Preferences;
+    NovaMenu* m_NovaMenu = nullptr;
+    bool m_NovaReconnect = false;
+    float m_NovaVolume = 1.0f;
+    bool m_NovaMute = false;
+    SDL_atomic_t m_NovaAudioReset = {0};
     bool m_IsFullScreen;
     SupportedVideoFormatList m_SupportedVideoFormats; // Sorted in order of descending priority
     STREAM_CONFIGURATION m_StreamConfig;

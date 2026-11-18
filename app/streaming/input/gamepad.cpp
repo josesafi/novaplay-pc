@@ -344,7 +344,11 @@ void SdlInputHandler::handleControllerButtonEvent(SDL_ControllerButtonEvent* eve
     else {
         state->buttons &= ~k_ButtonMap[event->button];
 
-        if (event->button == SDL_CONTROLLER_BUTTON_START) {
+        if (event->button == SDL_CONTROLLER_BUTTON_START && state->novaSkipStartRelease) {
+            // Start se solto despues de abrir el menu de Nova Play con Select+Start: no es una pulsacion larga
+            state->novaSkipStartRelease = false;
+        }
+        else if (event->button == SDL_CONTROLLER_BUTTON_START) {
             if (SDL_GetTicks() - state->lastStartDownTime > MOUSE_EMULATION_LONG_PRESS_TIME) {
                 if (state->mouseEmulationTimer != 0) {
                     SDL_RemoveTimer(state->mouseEmulationTimer);
@@ -383,6 +387,16 @@ void SdlInputHandler::handleControllerButtonEvent(SDL_ControllerButtonEvent* eve
                 LiSendMouseButtonEvent(BUTTON_ACTION_RELEASE, BUTTON_X2);
             }
         }
+    }
+
+    // Nova Play: Select+Start solos mantenidos 1 s abren los ajustes de la transmision (Session lo revisa cada 250 ms)
+    if (state->buttons == (PLAY_FLAG | BACK_FLAG)) {
+        if (state->novaComboSince == 0) {
+            state->novaComboSince = SDL_GetTicks() | 1;
+        }
+    }
+    else {
+        state->novaComboSince = 0;
     }
 
     // Handle Start+Select+L1+R1 as a gamepad quit combo
@@ -1066,4 +1080,34 @@ int SdlInputHandler::getAttachedGamepadMask()
     }
 
     return mask;
+}
+
+// ---------------------------------------------------------------- Nova Play: menu de ajustes de la transmision
+
+bool SdlInputHandler::takeNovaMenuCombo()
+{
+    for (int i = 0; i < MAX_GAMEPADS; i++) {
+        GamepadState* state = &m_GamepadState[i];
+        if (state->controller != nullptr && state->novaComboSince != 0 && SDL_GetTicks() - state->novaComboSince >= 1000) {
+            state->novaComboSince = 0;
+            state->novaSkipStartRelease = true;
+            state->buttons = 0;
+            // el juego no debe quedar con Select+Start apretados
+            LiSendMultiControllerEvent(state->index, m_GamepadMask, 0, 0, 0, 0, 0, 0, 0);
+            return true;
+        }
+    }
+    return false;
+}
+
+QStringList SdlInputHandler::connectedGamepadNames()
+{
+    QStringList names;
+    for (int i = 0; i < MAX_GAMEPADS; i++) {
+        if (m_GamepadState[i].controller != nullptr) {
+            const char* name = SDL_GameControllerName(m_GamepadState[i].controller);
+            names.append(QString("%1. %2").arg(m_GamepadState[i].index + 1).arg(name ? QString::fromUtf8(name) : QStringLiteral("Mando")));
+        }
+    }
+    return names;
 }

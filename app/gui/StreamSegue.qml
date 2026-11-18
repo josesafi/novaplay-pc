@@ -9,8 +9,12 @@ import SystemProperties 1.0
 Item {
     property Session session
     property string appName
-    property string stageText : isResume ? qsTr("Resuming %1...").arg(appName) :
+    property string stageText : reconnecting ? "Reconectando… tu juego sigue abierto" :
+                                isResume ? qsTr("Resuming %1...").arg(appName) :
                                            qsTr("Starting %1...").arg(appName)
+    // Nova Play: «Aplicar y reconectar» del menu de ajustes de la transmision
+    property bool reconnecting : false
+    property var pendingReconnect : null
     property bool isResume : false
     property bool quitAfter : false
 
@@ -61,6 +65,17 @@ Item {
 
     function sessionFinished(portTestResult)
     {
+        // Nova Play: el menu pidio reconectar con los ajustes nuevos. No se vuelve atras: se muestra «Reconectando…» y,
+        // cuando la sesion anterior termina de limpiarse (sessionReadyForDeletion), se abre la nueva contra la misma consola.
+        if (session && session.novaReconnectRequested() && !streamSegueErrorDialog.text) {
+            pendingReconnect = session.createReconnectSession()
+            stageText = "Reconectando… tu juego sigue abierto"
+            stageSpinner.visible = true
+            stageLabel.visible = true
+            window.visible = true
+            return
+        }
+
         if (portTestResult !== 0 && portTestResult !== -1 && streamSegueErrorDialog.text) {
             streamSegueErrorDialog.text += "\n\n" + qsTr("This PC's Internet connection is blocking Nova Play. Streaming over the Internet may not work while connected to this network.")
         }
@@ -94,6 +109,18 @@ Item {
 
     function sessionReadyForDeletion()
     {
+        if (pendingReconnect) {
+            var next = pendingReconnect
+            pendingReconnect = null
+            session = null
+            gc()
+            var component = Qt.createComponent("StreamSegue.qml")
+            var segue = component.createObject(stackView, {"appName": appName, "session": next, "isResume": true,
+                                                           "quitAfter": quitAfter, "reconnecting": true})
+            stackView.replace(stackView.currentItem, segue, StackView.Immediate)
+            return
+        }
+
         // Garbage collect the Session object since it's pretty heavyweight
         // and keeps other libraries (like SDL_TTF) around until it is deleted.
         session = null

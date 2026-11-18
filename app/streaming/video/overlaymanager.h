@@ -39,6 +39,15 @@ public:
 
     void setOverlayRenderer(IOverlayRenderer* renderer);
 
+    // Nova Play: imagen propia (menu de ajustes, boton «N») en lugar del texto del overlay. La superficie pasa a ser del
+    // OverlayManager; nullptr vuelve al texto normal (las estadisticas).
+    void setOverlayCustomSurface(OverlayType type, SDL_Surface* surface);
+    bool hasOverlayCustomSurface(OverlayType type) { return m_Custom[type]; }
+    // estado que tendra el overlay de texto cuando se quite la imagen propia
+    void setOverlayEnabledAfterCustom(OverlayType type, bool enabled) { if (m_Custom[type]) m_EnabledBeforeCustom[type] = enabled; else setOverlayState(type, enabled); }
+    bool overlayEnabledAfterCustom(OverlayType type) { return m_Custom[type] ? m_EnabledBeforeCustom[type] : m_Overlays[type].enabled; }
+    const QByteArray& fontData() { return m_FontData; }
+
 private:
     void notifyOverlayUpdated(OverlayType type);
     SDL_Surface* RenderTextOutlinedWrapped(TTF_Font* font, const char* text, SDL_Color textColor, SDL_Color outlineColor, int outlineWidth, int wrapWidth);
@@ -53,6 +62,8 @@ private:
         SDL_Surface* surface;
     } m_Overlays[OverlayMax];
     IOverlayRenderer* m_Renderer;
+    bool m_Custom[OverlayMax] = {};
+    bool m_EnabledBeforeCustom[OverlayMax] = {};
     QByteArray m_FontData;
 };
 

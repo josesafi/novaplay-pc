@@ -1,6 +1,7 @@
 #include "sdl.h"
 
 #include <Limelight.h>
+#include <QSettings>
 
 SdlAudioRenderer::SdlAudioRenderer()
     : m_AudioDevice(0),
@@ -37,7 +38,13 @@ bool SdlAudioRenderer::prepareForPlayback(const OPUS_MULTISTREAM_CONFIGURATION* 
                   opusConfig->channelCount *
                   getAudioBufferSampleSize();
 
-    m_AudioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    // Nova Play: salida elegida en el menu de ajustes (si ya no existe, la predeterminada)
+    QByteArray novaDevice = QSettings().value("novaplay/audioDevice").toString().toUtf8();
+    m_AudioDevice = SDL_OpenAudioDevice(novaDevice.isEmpty() ? NULL : novaDevice.constData(), 0, &want, &have, 0);
+    if (m_AudioDevice == 0 && !novaDevice.isEmpty()) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Nova Play: no se pudo abrir la salida elegida (%s), uso la predeterminada", SDL_GetError());
+        m_AudioDevice = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    }
     if (m_AudioDevice == 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to open audio device: %s",

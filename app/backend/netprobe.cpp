@@ -1,6 +1,7 @@
 #include "netprobe.h"
 
 #include <QElapsedTimer>
+#include <QSettings>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QMetaObject>
@@ -194,6 +195,13 @@ void NetProbe::run(QString host)
         else if (mbps >= 25 && loss < 2.0) { q["width"] = 1920; q["height"] = 1080; q["fps"] = 60; q["kbps"] = qMin(kbps, 15000); }
         else { q["width"] = 1280; q["height"] = 720; q["fps"] = 60; q["kbps"] = qMin(kbps, 10000); }
         r["quality"] = q;
+        // el menu de ajustes de la transmision ofrece «Usar lo recomendado por mi red» con este resultado
+        QSettings st;
+        st.setValue("novaplay/red/width", q["width"]);
+        st.setValue("novaplay/red/height", q["height"]);
+        st.setValue("novaplay/red/fps", q["fps"]);
+        st.setValue("novaplay/red/kbps", q["kbps"]);
+        st.setValue("novaplay/red/mbps", mbps);
     }
     QMetaObject::invokeMethod(this, [this, r] { m_Running = false; emit runningChanged(); emit finished(r); }, Qt::QueuedConnection);
 }

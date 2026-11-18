@@ -182,8 +182,21 @@ void Session::arDecodeAndPlaySample(char* sampleData, int sampleLength)
 
     s_ActiveSession->m_AudioSampleCount++;
 
+    // Nova Play: cambio de salida de sonido desde el menu: se cierra el dispositivo y se reabre enseguida con el nuevo
+    if (SDL_AtomicGet(&s_ActiveSession->m_NovaAudioReset)) {
+        SDL_AtomicSet(&s_ActiveSession->m_NovaAudioReset, 0);
+        if (s_ActiveSession->m_AudioRenderer != nullptr) {
+            opus_multistream_decoder_destroy(s_ActiveSession->m_OpusDecoder);
+            s_ActiveSession->m_OpusDecoder = nullptr;
+            delete s_ActiveSession->m_AudioRenderer;
+            s_ActiveSession->m_AudioRenderer = nullptr;
+        }
+        // que el intento de reabrir sea en esta misma muestra (se reintenta cada 200)
+        s_ActiveSession->m_AudioSampleCount -= s_ActiveSession->m_AudioSampleCount % 200;
+    }
+
     // If audio is muted, don't decode or play the audio
-    if (s_ActiveSession->m_AudioMuted) {
+    if (s_ActiveSession->m_AudioMuted || s_ActiveSession->m_NovaMute) {
         return;
     }
 
@@ -211,6 +224,20 @@ void Session::arDecodeAndPlaySample(char* sampleData, int sampleLength)
                                                      (short*)buffer,
                                                      desiredBufferSize / frameSize,
                                                      0);
+        }
+
+        // Nova Play: volumen del menu de ajustes
+        float novaVolume = s_ActiveSession->m_NovaVolume;
+        if (samplesDecoded > 0 && novaVolume < 0.999f) {
+            int n = samplesDecoded * s_ActiveSession->m_ActiveAudioConfig.channelCount;
+            if (s_ActiveSession->m_AudioRenderer->getAudioBufferFormat() == IAudioRenderer::AudioFormat::Float32NE) {
+                float* f = (float*)buffer;
+                for (int i = 0; i < n; i++) f[i] *= novaVolume;
+            }
+            else {
+                short* sh = (short*)buffer;
+                for (int i = 0; i < n; i++) sh[i] = (short)(sh[i] * novaVolume);
+            }
         }
 
         // Update desiredSize with the number of bytes actually populated by the decoding operation

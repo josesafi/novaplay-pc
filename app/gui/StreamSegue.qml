@@ -17,6 +17,8 @@ Item {
     property var pendingReconnect : null
     property bool isResume : false
     property bool quitAfter : false
+    // Nova Play (catalogo): si la transmision falla, el error vuelve al catalogo (mensaje en espanol con «Reintentar»)
+    property var novaOnError : null
 
     function stageStarting(stage)
     {
@@ -83,6 +85,15 @@ Item {
         // Re-enable GUI gamepad usage now
         SdlGamepadKeyNavigation.enable()
 
+        if (novaOnError && streamSegueErrorDialog.text) {
+            var failText = streamSegueErrorDialog.text
+            streamSegueErrorDialog.text = ""
+            stackView.pop()
+            window.visible = true
+            novaOnError(failText)
+            return
+        }
+
         // Pop the StreamSegue off the stack if this is a GUI-based app launch
         if (!quitAfter) {
             stackView.pop()
@@ -116,7 +127,7 @@ Item {
             gc()
             var component = Qt.createComponent("StreamSegue.qml")
             var segue = component.createObject(stackView, {"appName": appName, "session": next, "isResume": true,
-                                                           "quitAfter": quitAfter, "reconnecting": true})
+                                                           "quitAfter": quitAfter, "reconnecting": true, "novaOnError": novaOnError})
             stackView.replace(stackView.currentItem, segue, StackView.Immediate)
             return
         }

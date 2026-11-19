@@ -58,6 +58,26 @@ int AppModel::getDirectLaunchAppIndex()
     return -1;
 }
 
+int AppModel::findAppIndexByName(const QString& name)
+{
+    for (int i = 0; i < m_VisibleApps.count(); i++) {
+        if (m_VisibleApps[i].name.compare(name, Qt::CaseInsensitive) == 0) {
+            return i;
+        }
+    }
+
+    // las consolas de Nova Play publican una sola app: si el nombre cambia, se usa esa
+    return m_VisibleApps.count() == 1 ? 0 : -1;
+}
+
+int AppModel::getAppIdAt(int appIndex)
+{
+    if (appIndex < 0 || appIndex >= m_VisibleApps.count()) {
+        return 0;
+    }
+    return m_VisibleApps[appIndex].id;
+}
+
 int AppModel::rowCount(const QModelIndex &parent) const
 {
     // For list models only the root node (an invalid parent) should return the list's size. For all

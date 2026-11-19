@@ -31,6 +31,11 @@ public:
 
     Q_INVOKABLE int getDirectLaunchAppIndex();
 
+    // Nova Play (catalogo): indice de la app con ese nombre (o la unica que haya), -1 si la lista aun no llega
+    Q_INVOKABLE int findAppIndexByName(const QString& name);
+
+    Q_INVOKABLE int getAppIdAt(int appIndex);
+
     Q_INVOKABLE int getRunningAppId();
 
     Q_INVOKABLE QString getRunningAppName();

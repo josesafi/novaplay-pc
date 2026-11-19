@@ -64,6 +64,12 @@ public:
     // callback(status, body): body es el JSON ya convertido (objeto o lista) o null
     Q_INVOKABLE void get(QString path, QJSValue callback);
     Q_INVOKABLE void post(QString path, QVariant body, QJSValue callback);
+    // cuenta con la que se juega (la fija el inicio); la usa «Cerrar el juego» del panel «N» durante la transmision
+    Q_INVOKABLE void setPlayAccount(QString accountId) { m_PlayAccount = accountId; }
+
+    // «Cerrar el juego» (juego congelado): POST play/close-game en un hilo propio, porque mientras se transmite el bucle de Qt esta
+    // detenido. done(status) se llama DESDE ESE HILO (0 = sin red, sin sesion o sin cuenta).
+    static void closeGameAsync(std::function<void(int status)> done);
 
 signals:
     void sessionChanged();
@@ -92,4 +98,6 @@ private:
     QString m_PendingPassword;
     bool m_TwoFactorEnabled = false;
     QJSEngine* m_Engine = nullptr;
+    QString m_PlayAccount;
+    static NovaApi* s_Instance;
 };

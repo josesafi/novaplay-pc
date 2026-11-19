@@ -28,6 +28,8 @@ Item {
 
     // estado de la cuenta (respuesta de GET /accounts/:id/play)
     property string accountId: ""
+    // «Cerrar el juego» del panel «N» llama a la API con esta cuenta durante la transmision
+    onAccountIdChanged: NovaApi.setPlayAccount(accountId)
     property var play: null
     property var myHost: null
     property bool loading: false

@@ -4,6 +4,8 @@
 #include "settings/streamingpreferences.h"
 
 #include <QFile>
+#include "backend/novaapi.h"
+#include <Limelight.h>
 #include <QSettings>
 
 using namespace Overlay;
@@ -166,6 +168,10 @@ void NovaMenu::build()
     m_StartCodec = p->videoCodecConfig == StreamingPreferences::VCC_FORCE_H264 ? 1 : p->videoCodecConfig == StreamingPreferences::VCC_FORCE_HEVC ? 2 : 0;
     m_StartVsync = p->enableVsync;
 
+    add({Header, IdNone, QString::fromUtf8("JUEGO")});
+    Row cg{Action, IdCloseGame, QString::fromUtf8("Cerrar el juego")};
+    cg.hint = QString::fromUtf8("Si el juego se congeló: lo cierra sin terminar tu sesión");
+    add(cg);
     add({Header, IdNone, QString::fromUtf8("VIDEO")});
     Row res{Choice, IdResolution, QString::fromUtf8("Resolución"), resolutions()};
     res.reconnect = true;
@@ -384,6 +390,10 @@ void NovaMenu::render()
                 }
             }
         }
+        else if (r.kind == Action && r.id == IdCloseGame) {
+            QString t = m_CloseState == 2 ? QString::fromUtf8("Cerrando…") : m_CloseState == 1 ? QString::fromUtf8("Sí, cerrar ›") : QString::fromUtf8("Cerrar ›");
+            text(sf, fBold, t, vx + vw - textWidth(fBold, t), ty, m_CloseState ? C_WARN : sel ? C_ACCENT : C_MUTED);
+        }
         else if (r.kind == Action) {
             text(sf, fBold, QString::fromUtf8("Aplicar ›"), vx + vw - textWidth(fBold, QString::fromUtf8("Aplicar ›")), ty, sel ? C_ACCENT : C_MUTED);
         }
@@ -460,6 +470,14 @@ void NovaMenu::open()
     m_Open = true;
     m_ButtonVisible = false;
     m_Status.clear();
+    if (m_CloseState == 1) {   // cambiar de opcion o reabrir el panel cancela «¿Cerrar el juego?»
+        m_CloseState = 0;
+        if (Row* r = rowById(IdCloseGame)) {
+            r->label = QString::fromUtf8("Cerrar el juego");
+            r->hint = QString::fromUtf8("Si el juego se congeló: lo cierra sin terminar tu sesión");
+        }
+    }
+
     if (m_Session->m_InputHandler != nullptr) {
         m_CaptureOnClose = m_Session->m_InputHandler->isCaptureActive() || m_CaptureOnClose;
         m_Session->m_InputHandler->raiseAllKeys();
@@ -482,6 +500,13 @@ void NovaMenu::close()
 
 void NovaMenu::moveSelection(int delta)
 {
+    if (m_CloseState == 1) {   // cambiar de opcion o reabrir el panel cancela «¿Cerrar el juego?»
+        m_CloseState = 0;
+        if (Row* r = rowById(IdCloseGame)) {
+            r->label = QString::fromUtf8("Cerrar el juego");
+            r->hint = QString::fromUtf8("Si el juego se congeló: lo cierra sin terminar tu sesión");
+        }
+    }
     int n = m_Rows.size();
     for (int k = 0; k < n; k++) {
         m_Selected = (m_Selected + delta + n) % n;
@@ -564,6 +589,19 @@ void NovaMenu::activate(Row& r)
         close();
         return;
     }
+    else if (r.id == IdCloseGame) {
+        if (m_CloseState == 0) {
+            m_CloseState = 1;
+            r.label = QString::fromUtf8("¿Cerrar el juego?");
+            r.hint = QString::fromUtf8("Lo que no hayas guardado se pierde · otra opción o Esc para cancelar");
+            m_Status.clear();
+        }
+        else if (m_CloseState == 1) {
+            closeGame();
+        }
+        render();
+        return;
+    }
     else if (r.id == IdApply) {
         if (pendingReconnect()) applyAndReconnect();
         return;
@@ -576,6 +614,28 @@ void NovaMenu::activate(Row& r)
         if (Row* br = rowById(IdBitrate)) br->value = SDL_clamp((kbps + 500) / 1000, br->min, br->max);
         m_Status = QString::fromUtf8("Listo: pulsa «Aplicar y reconectar».");
     }
+}
+
+void NovaMenu::closeGame()
+{
+    m_CloseState = 2;
+    if (Row* r = rowById(IdCloseGame)) {
+        r->label = QString::fromUtf8("Cerrando el juego…");
+        r->hint = QString::fromUtf8("En unos segundos vuelves a la pantalla de Nova Play");
+    }
+    m_Status = QString::fromUtf8("Cerrando el juego… tu sesión sigue abierta.");
+    // respaldo sin red: Ctrl+Alt+Fin a la consola (allí también cierra el juego)
+    const char mods = MODIFIER_CTRL | MODIFIER_ALT;
+    LiSendKeyboardEvent(0x11, KEY_ACTION_DOWN, MODIFIER_CTRL);
+    LiSendKeyboardEvent(0x12, KEY_ACTION_DOWN, mods);
+    LiSendKeyboardEvent(0x23, KEY_ACTION_DOWN, mods);
+    LiSendKeyboardEvent(0x23, KEY_ACTION_UP, mods);
+    LiSendKeyboardEvent(0x12, KEY_ACTION_UP, MODIFIER_CTRL);
+    LiSendKeyboardEvent(0x11, KEY_ACTION_UP, 0);
+    SDL_AtomicSet(&m_CloseResult, -2);
+    SDL_atomic_t* out = &m_CloseResult;
+    NovaApi::closeGameAsync([out](int status) { SDL_AtomicSet(out, status); });
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Nova Play: cerrar el juego pedido");
 }
 
 void NovaMenu::applyAndReconnect()
@@ -739,6 +799,27 @@ void NovaMenu::tick()
     if (!m_Open && m_ButtonVisible && SDL_TICKS_PASSED(SDL_GetTicks(), m_ButtonUntil)) {
         m_ButtonVisible = false;
         clearOverlay();
+    }
+    if (m_CloseState == 2) {
+        int st = SDL_AtomicGet(&m_CloseResult);
+        if (st != -2) {
+            SDL_AtomicSet(&m_CloseResult, -1);
+            m_CloseState = 0;
+            if (Row* r = rowById(IdCloseGame)) {
+                r->label = QString::fromUtf8("Cerrar el juego");
+                r->hint = QString::fromUtf8("Si el juego se congeló: lo cierra sin terminar tu sesión");
+            }
+            if (st == 200) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Nova Play: la consola esta cerrando el juego");
+                if (m_Open) close();
+                return;
+            }
+            // sin respuesta de la API igual se mando Ctrl+Alt+Fin: se avisa sin alarmar
+            m_Status = st == 409 ? QString::fromUtf8("La consola no tiene una sesión abierta a tu nombre.")
+                     : st == 0 ? QString::fromUtf8("Sin conexión con tu cuenta: se mandó Ctrl+Alt+Fin a la consola; si el juego sigue, inténtalo de nuevo.")
+                               : QString::fromUtf8("No se pudo pedir que se cierre el juego (error %1). Inténtalo de nuevo.").arg(st);
+            if (m_Open) render();
+        }
     }
     if (m_Open && !m_Status.isEmpty() && m_Status.startsWith(QString::fromUtf8("Cambiando la salida")) && SDL_AtomicGet(&m_Session->m_NovaAudioReset) == 0) {
         m_Status = QString::fromUtf8("Salida de sonido cambiada.");

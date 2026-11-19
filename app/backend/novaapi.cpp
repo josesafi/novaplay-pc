@@ -7,6 +7,9 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QUrl>
+#include <QEventLoop>
+#include <QTimer>
+#include <thread>
 #include <QClipboard>
 #include <QGuiApplication>
 
@@ -27,9 +30,45 @@ static QString apiBase()
 
 static const QByteArray kSessionCookie = QByteArrayLiteral("__Host-novacloud_session");
 
+NovaApi* NovaApi::s_Instance = nullptr;
+
 NovaApi::NovaApi(QObject* parent) : QObject(parent)
 {
+    s_Instance = this;
     loadSession();
+}
+
+void NovaApi::closeGameAsync(std::function<void(int status)> done)
+{
+    NovaApi* api = s_Instance;
+    if (api == nullptr || api->m_Session.isEmpty() || api->m_PlayAccount.isEmpty()) {
+        done(0);
+        return;
+    }
+    const QUrl url(apiBase() + "/api/v1/accounts/" + api->m_PlayAccount + "/play/close-game");
+    const QByteArray cookie = kSessionCookie + "=" + api->m_Session.toUtf8();
+    const QByteArray csrf = api->m_Csrf.toUtf8();
+    std::thread([url, cookie, csrf, done]() {
+        int status = 0;
+        {
+            QNetworkAccessManager nam;
+            QNetworkRequest req(url);
+            req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+            req.setRawHeader("Accept", "application/json");
+            req.setRawHeader("User-Agent", "NovaPlay-PC");
+            req.setRawHeader("Cookie", cookie);
+            if (!csrf.isEmpty()) req.setRawHeader("X-CSRF-Token", csrf);
+            QEventLoop loop;
+            QNetworkReply* reply = nam.post(req, QByteArray("{}"));
+            QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+            QTimer::singleShot(15000, &loop, &QEventLoop::quit);
+            loop.exec();
+            if (reply->isFinished()) status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            else reply->abort();
+            delete reply;
+        }
+        done(status);
+    }).detach();
 }
 
 void NovaApi::loadSession()

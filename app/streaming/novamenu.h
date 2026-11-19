@@ -37,6 +37,7 @@ private:
         IdAudioDevice, IdVolume, IdMute,
         IdGamepads, IdMouseMode, IdCapture,
         IdStats, IdKeys,
+        IdCloseGame,
         IdApply, IdClose, IdNone
     };
     struct Row {
@@ -84,4 +85,8 @@ private:
     struct CachedFont { int px; bool bold; TTF_Font* font; };
     QVector<CachedFont> m_Fonts;
     QString m_Status;
+    // «Cerrar el juego»: 0 nada, 1 pidiendo confirmacion, 2 cerrando; el resultado llega del hilo de la API
+    int m_CloseState = 0;
+    SDL_atomic_t m_CloseResult = {-1};
+    void closeGame();
 };
